@@ -36,7 +36,14 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        if (!Auth::attempt($data)) {
+        /* if (!Auth::attempt($data)) {...} 的寫法等同如下
+        
+        $user = User::where('email', $data['email'])->first();
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            // fail
+        }
+        */
+        if (!Auth::attempt($data)) { //Auth::attempt($data) 會使用 Hash::check() 來比對加密的 password 了，所以不用另外 verify password 了
             return response()->json([
                 'status' => 'error',
                 'message' => 'Invalid credentials'
