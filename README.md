@@ -4,6 +4,13 @@
 
 這是一個使用 Laravel + Sanctum 建立的登入驗證 API，提供使用者註冊、登入、Token 驗證與 API 保護功能。
 
+使用 Laravel 搭配 Sanctum 驗證機制開發 RESTful API。
+* 實作使用者驗證功能（註冊／登入），並採用安全的密碼雜湊處理
+* 建構商品 CRUD API，包含資料驗證與 API Resource 轉換
+* 採用 Service Layer 架構，實現乾淨的程式碼分層設計
+* 設計基於使用者的授權機制，確保用戶僅能存取自己的資料
+* 整合 Laravel Sanctum 實現基於 Token 的身份驗證
+
 ---
 
 ## 🚀 技術
