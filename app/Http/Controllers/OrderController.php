@@ -52,4 +52,25 @@ class OrderController extends Controller
 
         return ApiResponse::success($orderItems, 'Order created successfully', 201);
     }
+
+    public function index(Request $request)
+    {
+        $orders = $request->user()
+            ->orders()
+            ->with('items.product') // 🔥 關聯載入
+            ->latest() // 按照 created_at 降序排列，讓最新的訂單在前面
+            ->get(); //取得全部訂單
+
+        return response()->json($orders);
+    }
+
+    public function show(Request $request, $id)
+    {
+        $order = $request->user()
+            ->orders()
+            ->with('items.product')
+            ->findOrFail($id); // 🔥 防止偷看
+
+        return response()->json($order);
+    }
 }
