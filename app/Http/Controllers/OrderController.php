@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreOrderRequest;
 use App\Helpers\ApiResponse;
+use App\Http\Resources\OrderResource;
 
 class OrderController extends Controller
 {
@@ -18,7 +19,7 @@ class OrderController extends Controller
         $items = $request->items;
 
         // 🔥 用 transaction（超重要）
-        $orderItems = DB::transaction(function () use ($user, $items) {
+        $orderRec = DB::transaction(function () use ($user, $items) {
 
             $totalPrice = 0;
             $orderItemsData = [];
@@ -39,7 +40,8 @@ class OrderController extends Controller
 
             // 建立 Order
             $order = $user->orders()->create([
-                'total_price' => $totalPrice
+                'total_price' => $totalPrice,
+                'status' => Order::STATUS_PENDING
             ]);
 
             // 建立 OrderItems
@@ -47,10 +49,10 @@ class OrderController extends Controller
                 $order->items()->create($data);
             }
 
-            return response()->json($order->load('items.product'));
+            return $order->load('items.product');
         });
 
-        return ApiResponse::success($orderItems, 'Order created successfully', 201);
+        return ApiResponse::success(new OrderResource($orderRec), 'Order created successfully', 201);
     }
 
     public function index(Request $request)
@@ -59,9 +61,10 @@ class OrderController extends Controller
             ->orders()
             ->with('items.product') // 🔥 關聯載入
             ->latest() // 按照 created_at 降序排列，讓最新的訂單在前面
-            ->get(); //取得全部訂單
+            ->paginate(5); // 分頁，每頁5筆資料
+            //->get(); //取得全部訂單 //paginate() 和 get() 只能二選一，不能同時使用
 
-        return response()->json($orders);
+        return ApiResponse::success(OrderResource::collection($orders), 'get all orders by ' . $request->user()->name . ' successfully');
     }
 
     public function show(Request $request, $id)
@@ -71,6 +74,6 @@ class OrderController extends Controller
             ->with('items.product')
             ->findOrFail($id); // 🔥 防止偷看
 
-        return response()->json($order);
+        return ApiResponse::success(new OrderResource($order), 'get order (' . $order->id . ') by ' . $request->user()->name . ' successfully');
     }
 }
