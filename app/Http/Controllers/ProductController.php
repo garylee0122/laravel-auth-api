@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
@@ -21,8 +22,19 @@ class ProductController extends Controller
     // 查詢（含搜尋 + 分頁）
     public function index(Request $request)
     {
-        $products = $this->productService->getProducts($request->user(), $request);
-        return ApiResponse::success(ProductResource::collection($products));
+        $result = $this->productService->getProducts($request->user(), $request);
+        $products = $result['products'];
+
+        return ApiResponse::success([
+            'items' => ProductResource::collection($products->getCollection()),
+            'pagination' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total' => $products->total(),
+            ],
+            'meta' => $result['meta'],
+        ]);
     }
 
     // 查單筆
@@ -36,6 +48,7 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         $product = $this->productService->createProduct($request->user(), $request->validated());
+        Cache::tags(['products'])->flush();
         return ApiResponse::success(new ProductResource($product), null, 201);
     }
 
@@ -43,6 +56,7 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, $id)
     {
         $product = $this->productService->updateProduct($request->user(), $id, $request->validated());
+        Cache::tags(['products'])->flush();
         return ApiResponse::success(new ProductResource($product), 'Product updated');
     }
 
@@ -50,6 +64,7 @@ class ProductController extends Controller
     public function destroy(Request $request, $id)
     {
         $this->productService->deleteProduct($request->user(), $id);
+        Cache::tags(['products'])->flush();
         return ApiResponse::success(null, 'Product deleted');
     }
 }
