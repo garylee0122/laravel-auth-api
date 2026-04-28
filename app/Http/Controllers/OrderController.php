@@ -53,6 +53,8 @@ class OrderController extends Controller
                 }
 
                 $product->decrement('stock', $item['quantity']);
+                //$product->stock -= $item['quantity'];
+                //$product->save();
 
                 $subtotal = $product->price * $item['quantity'];
                 $totalPrice += $subtotal;
@@ -78,7 +80,7 @@ class OrderController extends Controller
 
         // 清掉產品相關的快取，確保後續請求能看到最新的庫存狀態
         Cache::tags(['products'])->flush();
-        // 將訂單處理的工作推送到隊列中，讓它在背景中執行，不會阻塞用戶的請求
+        // 將訂單處理的工作推送到 Queue 中，讓它在背景中執行，不會阻塞用戶的請求
         ProcessOrder::dispatch($order->id);
 
         return ApiResponse::success(

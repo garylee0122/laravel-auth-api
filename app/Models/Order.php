@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
     const STATUS_PAID = 'paid';
     const STATUS_CANCELLED = 'cancelled';
+    const STATUS_FAIL = 'fail';
 
     protected $fillable = [
         'user_id',
