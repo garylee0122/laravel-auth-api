@@ -21,3 +21,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('orders', [OrderController::class, 'index']);
     Route::get('orders/{id}', [OrderController::class, 'show']);
 });
+
+use App\Jobs\SendOrderJob;
+Route::get('/test-queue', function () {
+    SendOrderJob::dispatch(123);
+    return "Job dispatched!";
+});
