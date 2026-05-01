@@ -5,14 +5,15 @@ namespace App\Http\Controllers;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
-use App\Jobs\ProcessOrder;
 use App\Models\Order;
 use App\Models\Product;
+use App\Jobs\ProcessOrder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
@@ -80,8 +81,20 @@ class OrderController extends Controller
 
         // 清掉產品相關的快取，確保後續請求能看到最新的庫存狀態
         Cache::tags(['products'])->flush();
-        // 將訂單處理的工作推送到 Queue 中，讓它在背景中執行，不會阻塞用戶的請求
-        ProcessOrder::dispatch($order->id);
+        
+        /* Region : 將訂單處理的工作推送到 Queue 中，讓它在背景中執行，不會阻塞用戶的請求 START */
+        
+        // 這裡是為了交給 Laravel 的 Queue 系統來處理訂單的後續流程
+        // ProcessOrder::dispatch($order->id);
+        
+        // 這裡是為了給 ASP.NET 的 Worker Service 處理
+        // 所以使用 Redis 的 rpush 方法將訂單資訊以 JSON 格式推送到指定的隊列中
+        Redis::connection('queue_raw')->rpush('order_queue', json_encode([
+            'OrderId' => $order->id,
+            'RetryCount' => 0,
+        ], JSON_UNESCAPED_UNICODE));
+
+        /* Region : 將訂單處理的工作推送到 Queue 中，讓它在背景中執行，不會阻塞用戶的請求 END */
 
         return ApiResponse::success(
             new OrderResource($order),
