@@ -18,16 +18,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 # 先複製 composer（加快 build🔥）
-COPY composer.json composer.lock ./
+# COPY composer.json composer.lock ./
 
-RUN composer install --no-scripts --no-autoloader
+# RUN composer install --no-scripts --no-autoloader
 
 # 再複製全部
 COPY . .
 
-RUN composer dump-autoload
+# RUN composer dump-autoload
 
 # Laravel 權限
-RUN chmod -R 775 storage bootstrap/cache
+# RUN chmod -R 775 storage bootstrap/cache
+
+RUN composer install
 
 CMD ["php-fpm"]

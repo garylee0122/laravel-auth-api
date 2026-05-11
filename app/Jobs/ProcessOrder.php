@@ -41,7 +41,8 @@ class ProcessOrder implements ShouldQueue
             }
 
             // 只有當訂單狀態是 pending 時才繼續處理，避免重複處理或處理已經完成/失敗的訂單
-            if ($order->status !== Order::STATUS_PENDING) {
+            // if ($order->status !== Order::STATUS_PENDING) {
+            if (! $order->isPendingStatus()) {
                 Log::warning("ProcessOrder skipped: order status is not pending", [
                     'order_id' => $order->id,
                     'status' => $order->status,
@@ -57,9 +58,9 @@ class ProcessOrder implements ShouldQueue
 
             sleep(3);
 
-            // 將訂單狀態更新為 completed，表示訂單已經成功處理完成
+            // 將訂單狀態更新為 created，表示訂單已經成功處理完成
             $order->update([
-                'status' => Order::STATUS_COMPLETED,
+                'status' => Order::STATUS_CREATED,
             ]);
 
             Log::info("Order processed successfully", [
@@ -82,7 +83,8 @@ class ProcessOrder implements ShouldQueue
                 return;
             }
 
-            if ($order->status === Order::STATUS_FAIL) {
+            // if ($order->status === Order::STATUS_FAIL) {
+            if (in_array($order->status, [Order::STATUS_FAILED, Order::LEGACY_STATUS_FAIL], true)) {
                 Log::warning("ProcessOrder compensation skipped: order {$order->id} already marked as fail", [
                     'order_id' => $order->id,
                 ]);
@@ -90,7 +92,7 @@ class ProcessOrder implements ShouldQueue
             }
 
             $order->update([
-                'status' => Order::STATUS_FAIL,
+                'status' => Order::STATUS_FAILED,
             ]);
 
             Log::error("ProcessOrder failed permanently after 3 attempts. Order marked as fail", [
